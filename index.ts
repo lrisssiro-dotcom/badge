@@ -1,48 +1,61 @@
-import discord
-from discord.ext import commands
+import { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, Events, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 
-TOKEN = "MTQ4MjY1MDQwMTk3ODQ0OTk5Mw.G63jG3.WO7bAfUHRN4jHOTeYn7-3D2yAXg0IpT0ZgXzZE"  # حط توكن البوت
-CHANNEL_ID = 1413714001308684383  # ايدي روم التقديمات
-ADMIN_ROLE_ID = 1482659672329687112  # ايدي رول الادارة
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds]
+});
 
-intents = discord.Intents.default()
-intents.message_content = True
+const TOKEN = "MTQ4MjY1MDQwMTk3ODQ0OTk5Mw.G63jG3.WO7bAfUHRN4jHOTeYn7-3D2yAXg0IpT0ZgXzZE"; // حط توكن البوت
+const CHANNEL_ID = "1413714001308684383"; // روم التقديمات
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+client.once(Events.ClientReady, () => {
+  console.log(`Logged in as ${client.user?.tag}`);
+});
 
-class ApplyModal(discord.ui.Modal, title="تقديم إدارة"):
-    
-    name = discord.ui.TextInput(label="اسمك", placeholder="اكتب اسمك هنا")
-    age = discord.ui.TextInput(label="عمرك", placeholder="كم عمرك")
-    experience = discord.ui.TextInput(label="خبرتك", style=discord.TextStyle.paragraph)
+client.on(Events.InteractionCreate, async (interaction) => {
 
-    async def on_submit(self, interaction: discord.Interaction):
-        channel = bot.get_channel(1413714001308684383)
+  if (interaction.isButton()) {
 
-        embed = discord.Embed(
-            title="تقديم إدارة جديد",
-            color=discord.Color.blue()
-        )
-        embed.add_field(name="المتقدم", value=interaction.user.mention, inline=False)
-        embed.add_field(name="الاسم", value=self.name.value, inline=False)
-        embed.add_field(name="العمر", value=self.age.value, inline=False)
-        embed.add_field(name="الخبرة", value=self.experience.value, inline=False)
+    const modal = new ModalBuilder()
+      .setCustomId("applyModal")
+      .setTitle("تقديم إدارة");
 
-        await channel.send(f"<@&{ADMIN_ROLE_ID}>", embed=embed)
-        await interaction.response.send_message("تم ارسال تقديمك بنجاح ✅", ephemeral=True)
+    const name = new TextInputBuilder()
+      .setCustomId("name")
+      .setLabel("اسمك")
+      .setStyle(TextInputStyle.Short);
 
-class ApplyButton(discord.ui.View):
-    @discord.ui.button(label="تقديم إدارة", style=discord.ButtonStyle.green)
-    async def apply(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(ApplyModal())
+    const age = new TextInputBuilder()
+      .setCustomId("age")
+      .setLabel("عمرك")
+      .setStyle(TextInputStyle.Short);
 
-@bot.command()
-async def تقديم(ctx):
-    embed = discord.Embed(
-        title="التقديم للإدارة",
-        description="اضغط الزر تحت للتقديم",
-        color=discord.Color.green()
-    )
-    await ctx.send(embed=embed, view=ApplyButton())
+    const row1 = new ActionRowBuilder<TextInputBuilder>().addComponents(name);
+    const row2 = new ActionRowBuilder<TextInputBuilder>().addComponents(age);
 
-bot.run(TOKEN)
+    modal.addComponents(row1, row2);
+
+    await interaction.showModal(modal);
+  }
+
+  if (interaction.isModalSubmit()) {
+
+    const name = interaction.fields.getTextInputValue("name");
+    const age = interaction.fields.getTextInputValue("age");
+
+    const embed = new EmbedBuilder()
+      .setTitle("تقديم إدارة جديد")
+      .addFields(
+        { name: "المستخدم", value: interaction.user.tag },
+        { name: "الاسم", value: name },
+        { name: "العمر", value: age }
+      );
+
+    const channel:any = client.channels.cache.get(CHANNEL_ID);
+    channel.send({ embeds: [embed] });
+
+    await interaction.reply({ content: "تم ارسال تقديمك ✅", ephemeral: true });
+  }
+
+});
+
+client.login(TOKEN);
